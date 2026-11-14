@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Abandoned, Not Forgotten — Off-World Space Archaeology</title>
+
+  <!-- Tailwind CSS via CDN (Zero Build Required) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Editorial & Telemetry Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    :root {
+      --bg-obsidian: #090A0F;
+      --bg-slate: #1C1F26;
+      --mars-rust: #C1440E;
+      --telemetry-amber: #E5A93C;
+    }
+
+    body {
+      background-color: var(--bg-obsidian);
+      color: #f1f5f9;
+      font-family: system-ui, -apple-system, sans-serif;
+      overflow-x: hidden;
+    }
+
+    .font-serif-editorial {
+      font-family: 'Playfair Display', Georgia, serif;
+    }
+
+    .font-mono-telemetry {
+      font-family: 'Space Mono', monospace;
+    }
+
+    /* Custom subtle scrollbars */
+    ::-webkit-scrollbar {
+      width: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(9, 10, 15, 0.5);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(229, 169, 60, 0.35);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(229, 169, 60, 0.75);
+    }
+
+    /* Floating dust particle animation */
+    @keyframes floatDust {
+      0%, 100% {
+        transform: translate(0px, 0px);
+        opacity: 0.25;
+      }
+      50% {
+        transform: translate(14px, -18px);
+        opacity: 0.75;
+      }
+    }
+
+    .dust-particle {
+      position: absolute;
+      border-radius: 9999px;
+      pointer-events: none;
+      animation: floatDust linear infinite;
+    }
+
+    /* Beacon sonar pulse */
+    @keyframes beaconPing {
+      0% {
+        transform: scale(0.85);
+        opacity: 0.85;
+      }
+      100% {
+        transform: scale(2.4);
+        opacity: 0;
+      }
+    }
+
+    .beacon-ring {
+      animation: beaconPing 2.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+    }
+
+    /* Custom Environmental Decay Range Slider */
+    input[type="range"].decay-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"].decay-slider::-webkit-slider-runnable-track {
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.16);
+    }
+    input[type="range"].decay-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      margin-top: -6px;
+      background-color: #E5A93C;
+      height: 16px;
+      width: 16px;
+      border-radius: 50%;
+      box-shadow: 0 0 12px rgba(229, 169, 60, 0.95);
+      border: 2px solid #090A0F;
+      transition: transform 0.15s ease;
+    }
+    input[type="range"].decay-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    /* Smooth Slide-over Drawer */
+    .drawer-panel {
+      transform: translateX(100%);
+      transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .drawer-panel.open {
+      transform: translateX(0);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-[#E5A93C] selection:text-[#090A0F]">
+
+  <!-- Dynamic Planetary Glow Backdrop -->
+  <div
+    id="world-backdrop"
+    class="fixed inset-0 pointer-events-none z-0 transition-all duration-1000"
+    style="background: radial-gradient(circle at 50% 48%, rgba(46, 52, 66, 0.42) 0%, rgba(28, 31, 38, 0.55) 45%, #090A0F 92%);"
+  ></div>
+
+  <!-- Ambient Floating Dust Particles -->
+  <div id="dust-container" class="fixed inset-0 pointer-events-none overflow-hidden z-0"></div>
+
+  <!-- ======================================================================
+       HEADER: EXHIBITION TITLE, WORLD SWITCHER & AUDIO TOGGLE
+       ====================================================================== -->
+  <header class="relative z-30 w-full px-4 sm:px-8 pt-5 pb-3 flex flex-col md:flex-row items-center justify-between gap-4">
+    <!-- Title -->
+    <div class="text-center md:text-left">
+      <div class="flex items-center justify-center md:justify-start gap-2 text-[10px] font-mono-telemetry tracking-[0.25em] text-[#E5A93C] uppercase mb-1">
+        <span>✦</span>
+        <span>OFF-WORLD ARCHAEOLOGY ARCHIVE</span>
+      </div>
+      <h1 class="font-serif-editorial text-2xl sm:text-3xl font-bold tracking-tight text-white">
+        Abandoned, <span class="italic font-normal text-slate-300">Not Forgotten</span>
+      </h1>
+    </div>
+
+    <!-- World Switcher Toggle (THE MOON vs MARS) -->
+    <div class="flex items-center p-1 rounded-full bg-[#1C1F26]/90 backdrop-blur-md border border-white/15 shadow-2xl">
+      <button
+        id="btn-moon"
+        onclick="switchWorld('moon')"
+        class="px-5 py-2 rounded-full font-mono-telemetry text-xs tracking-widest transition-all duration-300 flex items-center gap-2 cursor-pointer bg-[#E5A93C] text-[#090A0F] font-bold shadow-[0_0_20px_rgba(229,169,60,0.45)]"
+      >
+        <span>◐</span>
+        <span>THE MOON</span>
+      </button>
+
+      <button
+        id="btn-mars"
+        onclick="switchWorld('mars')"
+        class="px-5 py-2 rounded-full font-mono-telemetry text-xs tracking-widest transition-all duration-300 flex items-center gap-2 cursor-pointer text-slate-400 hover:text-white"
+      >
+        <span>◉</span>
+        <span>MARS</span>
+      </button>
+    </div>
+
+    <!-- Web Audio API Deep Space Drone Toggle -->
+    <div>
+      <button
+        id="btn-audio"
+        onclick="toggleSpaceAudio()"
+        class="px-3.5 py-2 rounded-full border font-mono-telemetry text-[11px] tracking-wider flex items-center gap-2 transition-all cursor-pointer bg-[#1C1F26]/80 border-white/15 text-slate-400 hover:text-white hover:border-white/30"
+      >
+        <span id="audio-icon">🔇</span>
+        <span id="audio-label">DEEP SPACE AUDIO</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ======================================================================
+       MAIN STAGE: INTERACTIVE TOPOGRAPHICAL SURFACE MAP
+       ====================================================================== -->
+  <main class="relative z-10 flex-1 flex flex-col items-center justify-center px-4 sm:px-8 my-2">
+    <!-- Subtle Coordinate Grid -->
+    <div
+      id="coord-grid"
+      class="fixed inset-0 opacity-20 pointer-events-none"
+      style="background-image: linear-gradient(to right, rgba(148,163,184,0.18) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,0.18) 1px, transparent 1px); background-size: 64px 64px;"
+    ></div>
+
+    <!-- Map Frame -->
+    <div class="relative w-full max-w-6xl aspect-[16/9] min-h-[340px] max-h-[72vh]">
+      <!-- SVG Topographical Contours -->
+      <svg id="topo-svg" viewBox="0 0 1000 560" class="w-full h-full drop-shadow-2xl"></svg>
+
+      <!-- Pulsing Amber Beacon Pins Layer -->
+      <div id="pins-layer" class="absolute inset-0"></div>
+    </div>
+  </main>
+
+  <!-- ======================================================================
+       FOOTER: WORLD TELEMETRY & QUICK-ACCESS ARTIFACT CHIPS
+       ====================================================================== -->
+  <footer class="relative z-30 w-full px-4 sm:px-8 pb-5 pt-2">
+    <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-[#1C1F26]/75 backdrop-blur-md border border-white/10">
+      <div class="flex items-center gap-2.5 text-[11px] font-mono-telemetry text-slate-400">
+        <span class="text-[#E5A93C]">◈</span>
+        <span id="footer-telemetry">LUNA // AVG DISTANCE: 384,400 KM // 3 RELICS PRESERVED</span>
+      </div>
+
+      <div id="quick-chips" class="flex flex-wrap items-center justify-center gap-2"></div>
+    </div>
+  </footer>
+
+  <!-- ======================================================================
+       GLASSMORPHIC SLIDE-OVER STORY DRAWER
+       ====================================================================== -->
+  <div
+    id="drawer-backdrop"
+    onclick="closeDrawer()"
+    class="fixed inset-0 bg-black/60 backdrop-blur-[2px] z-40 hidden opacity-0 transition-opacity duration-300"
+  ></div>
+
+  <aside
+    id="story-drawer"
+    class="drawer-panel fixed top-0 right-0 h-full w-full max-w-xl bg-[#0D0F16]/95 backdrop-blur-xl border-l border-white/15 shadow-[0_0_60px_rgba(0,0,0,0.9)] z-50 flex flex-col text-slate-100"
+  >
+    <!-- Drawer Top Bar -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#090A0F]/85">
+      <div class="flex items-center gap-2.5">
+        <span class="w-2 h-2 rounded-full bg-[#E5A93C] animate-pulse"></span>
+        <span id="drawer-mission" class="font-mono-telemetry text-[11px] tracking-widest text-slate-400">
+          MISSION TELEMETRY
+        </span>
+      </div>
+      <button
+        onclick="closeDrawer()"
+        aria-label="Close drawer"
+        class="px-2.5 py-1 rounded-lg font-mono-telemetry text-xs text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+      >
+        ESC / CLOSE ✕
+      </button>
+    </div>
+
+    <!-- Drawer Scrollable Story Body -->
+    <div id="drawer-content" class="flex-1 overflow-y-auto px-6 sm:px-8 py-6 space-y-7">
+      <!-- Populated dynamically via JS -->
+    </div>
+  </aside>
+
+  <!-- ======================================================================
+       APPLICATION DATA & INTERACTIVE LOGIC
+       ====================================================================== -->
+  <script>
+    // ------------------------------------------------------------------------
+    // 1. RICH DATASET OF 6 NASA ARTIFACTS (THE MOON & MARS)
+    // ------------------------------------------------------------------------
+    const ARTIFACTS = [
+      // ==================== THE MOON ====================
+      {
+        id: 'apollo-11-eagle',
+        world: 'moon',
+        name: 'Apollo 11 Eagle Ascent Stage',
+        shortName: 'EAGLE ASCENT STAGE',
+        year: '1969',
+        mission: 'APOLLO 11 // TRANQUILITY BASE',
+        coordinates: '0°40′26.69″N 23°28′22.69″E (EST. IMPACT)',
+        endDate: '1969-07-21T21:54:00Z',
+        status: 'IMPACT SITE // SILENT',
+        statusBadgeClass: 'text-amber-400 border-amber-400/40 bg-amber-400/10',
+        mapPos: { x: 64, y: 46 },
+        elevation: '-1,980m Mare Tranquillitatis',
+        narrative: [
+          'I was built without aerodynamic grace—an angular insect of foil, titanium, and gold Kapton, engineered solely for the vacuum between worlds. For twenty-one hours on the Sea of Tranquility, I held the heartbeat of two strangers while the whole of Earth held its breath. When my ascent engine ignited, kicking up grey dust over the plaque we left behind, I carried Neil and Buzz back into the waiting arms of Columbia.',
+          'Once my crew transferred through the docking tunnel, my purpose was complete. Jettisoned into lunar orbit, I drifted through the silent dark until gravity gently pulled me down onto the ancient basalt plains. Somewhere beneath the regolith, my shattered aluminum bones still rest—the vessel that proved humanity could touch another world and return.'
+        ],
+        decayStages: [
+          {
+            label: '1969 // JETTISON',
+            condition: 'Intact foil shielding, residual propellant vented, gold Kapton gleaming in harsh sunlight.',
+            integrity: 98,
+            filter: 'brightness(1.05) contrast(1.05)'
+          },
+          {
+            label: '1985 // THERMAL FATIGUE',
+            condition: 'Over 200 extreme day-night cycles (+120°C to -130°C) fracture brittle adhesives and structural seams.',
+            integrity: 64,
+            filter: 'grayscale(0.3) contrast(1.15)'
+          },
+          {
+            label: '2005 // MICROMETEORITE PITTING',
+            condition: 'Decades of unshielded cosmic dust sandblast the outer hull, stripping away gold thermal blankets.',
+            integrity: 38,
+            filter: 'grayscale(0.6) contrast(1.2) brightness(0.9)'
+          },
+          {
+            label: 'TODAY // LUNAR RELIC',
+            condition: 'Partially buried in fine electrostatic regolith; oxidized aluminum fragments preserved in vacuum.',
+            integrity: 22,
+            filter: 'grayscale(0.85) contrast(1.3) brightness(0.8)'
+          }
+        ],
+        defaultTributes: [
+          {
+            sender: 'HOUSTON CAPCOM ARCHIVE',
+            message: 'Eagle has landed—and in our memories, you never stopped flying.',
+            timestamp: '2026-11-12 04:18 UTC'
+          }
+        ]
+      },
+      {
+        id: 'apollo-15-lrv',
+        world: 'moon',
+        name: 'Apollo 15 Lunar Roving Vehicle',
+        shortName: 'LRV-1 "MOON BUGGY"',
+        year: '1971',
+        mission: 'APOLLO 15 // HADLEY-APENNINE',
+        coordinates: '26°07′55.99″N 03°38′01.90″E',
+        endDate: '1971-08-02T17:11:00Z',
+        status: 'PARKED // BATTERY DEPLETED',
+        statusBadgeClass: 'text-amber-300 border-amber-300/40 bg-amber-300/10',
+        mapPos: { x: 47, y: 27 },
+        elevation: '-1,420m Hadley Rille',
+        narrative: [
+          'Before me, astronauts walked only as far as their oxygen tanks dared allow. With woven piano-wire wheels and four tiny quarter-horsepower motors, I carried Dave Scott and Jim Irwin 27.9 kilometers across the rolling foothills of Mount Hadley, bouncing like a dune buggy in one-sixth gravity while rooster-tails of grey powder arced cleanly without wind.',
+          'Before they climbed back into Falcon for the last time, they parked me 100 meters east of the lander and aimed my television camera back at their ship so Earth could watch them lift off. When the ascent engine roared, the blast wave rocked my fenders, and then silence fell forever. My front wheels remain turned slightly left, poised for a fifth excursion that will never come.'
+        ],
+        decayStages: [
+          {
+            label: '1971 // LAST PARKING BRAKE',
+            condition: 'Gold-anodized chassis gleaming; TV camera pointed at Falcon; silver-zinc batteries exhausted.',
+            integrity: 100,
+            filter: 'brightness(1.05)'
+          },
+          {
+            label: '1990 // UV DELAMINATION',
+            condition: 'Unfiltered solar ultraviolet radiation cracks non-metallic seat straps and polymer cable insulation.',
+            integrity: 74,
+            filter: 'sepia(0.2) contrast(1.1)'
+          },
+          {
+            label: '2010 // REGOLITH DUSTING',
+            condition: 'Electrostatic dust levitation coats mirrors, radiator louvers, and the high-gain umbrella antenna.',
+            integrity: 56,
+            filter: 'grayscale(0.45) contrast(1.15)'
+          },
+          {
+            label: 'TODAY // FROZEN IN TIME',
+            condition: 'Wire-mesh tires still hold their tread tracks in the Hadley soil; chassis intact in airless stillness.',
+            integrity: 49,
+            filter: 'grayscale(0.65) contrast(1.25) brightness(0.9)'
+          }
+        ],
+        defaultTributes: [
+          {
+            sender: 'ELENA R. // AEROSPACE HISTORIAN',
+            message: 'Still parked with the best seat in the solar system overlooking Hadley Rille.',
+            timestamp: '2026-11-10 19:42 UTC'
+          }
+        ]
+      },
+      {
+        id: 'charles-duke-photo',
+        world: 'moon',
+        name: 'Charles Duke’s Family Photo',
+        shortName: 'DUKE FAMILY PORTRAIT',
+        year: '1972',
+        mission: 'APOLLO 16 // DESCARTES HIGHLANDS',
+        coordinates: '08°58′22.84″S 15°30′00.68″E',
+        endDate: '1972-04-23T01:25:00Z',
+        status: 'BLEACHED BY SOLAR RADIATION',
+        statusBadgeClass: 'text-orange-300 border-orange-300/40 bg-orange-300/10',
+        mapPos: { x: 56, y: 65 },
+        elevation: '+540m Descartes Highlands',
+        narrative: [
+          'I am not made of titanium or gold foil—just a small Kodacolor print sealed inside a thin polyethylene sleeve, showing four smiling faces sitting on a green bench in Houston. On the back, written in ballpoint pen, are the words: "This is the family of Astronaut Charlie Duke from Planet Earth who landed on the Moon on April 20, 1972."',
+          'Charlie dropped me gently onto the lunar dust so his two young sons could say they had been to the Moon with their dad. He photographed me lying beside his bootprint, and then he walked away. Within months, the merciless ultraviolet glare of the unfiltered sun began erasing the ink and dye—until only a blank white rectangle remained, keeping a silent promise of love in the dark.'
+        ],
+        decayStages: [
+          {
+            label: 'APRIL 1972 // PLACED ON REGOLITH',
+            condition: 'Vivid Kodacolor portrait of Charlie, Dotty, Charles III, and Thomas clearly visible inside plastic sleeve.',
+            integrity: 100,
+            filter: 'saturate(1.2) contrast(1.05)'
+          },
+          {
+            label: '1974 // SOLAR BLEACHING',
+            condition: 'Intense UV radiation breaks down organic cyan, magenta, and yellow dyes; faces fade into pale sepia.',
+            integrity: 45,
+            filter: 'sepia(0.75) brightness(1.15) contrast(0.85)'
+          },
+          {
+            label: '1988 // POLYMER EMBRITTLEMENT',
+            condition: 'Plastic sleeve yellows and fractures under 14-day lunar heat cycles; ballpoint ink fades to ghosting.',
+            integrity: 20,
+            filter: 'grayscale(0.9) brightness(1.3) contrast(0.7)'
+          },
+          {
+            label: 'TODAY // PURE WHITE SILHOUETTE',
+            condition: 'Completely bleached white by 54+ years of cosmic rays—an invisible monument to human affection.',
+            integrity: 8,
+            filter: 'grayscale(1) brightness(1.5) contrast(0.55)'
+          }
+        ],
+        defaultTributes: [
+          {
+            sender: 'AARAV K.',
+            message: 'Even after the colors faded, the love written on the back still shines across 384,400 km.',
+            timestamp: '2026-11-14 16:05 UTC'
+          }
+        ]
+      },
+
+      // ==================== MARS ====================
+      {
+        id: 'opportunity-rover',
+        world: 'mars',
+        name: 'Opportunity Rover ("Oppy")',
+        shortName: 'MER-B // OPPORTUNITY',
+        year: '2004–2019',
+        mission: 'MARS EXPLORATION ROVER-B // PERSEVERANCE VALLEY',
+        coordinates: '01°56′46.3″S 354°28′24.2″E',
+        endDate: '2018-06-10T16:45:00Z',
+        status: 'SIGNAL LOST // DUST STORM',
+        statusBadgeClass: 'text-red-400 border-red-400/40 bg-red-400/10',
+        mapPos: { x: 34, y: 54 },
+        elevation: '-1,410m Endeavour Crater Rim',
+        finalTransmission: '"My battery is low and it\'s getting dark."',
+        narrative: [
+          'They gave me ninety Martian sols to look for ancient water, and I gave them fifteen years. Across 45.16 kilometers of Meridiani Planum, I rolled past Victoria and Santa Maria craters, discovering tiny hematite "blueberries" that proved warm, wet seas once lapped against these rust-red shores. My right front wheel stiffened with age, so I learned to drive backward, refusing to stop.',
+          'In June 2018, a planet-encircling dust storm swallowed the sun, turning noon into pitch midnight. As my solar panels starved in the choking ochre gloom, I transmitted my final telemetry packet back to Pasadena—data engineers translated as: "My battery is low and it\'s getting dark." For eight months, Earth played wake-up songs into the static, until they finally whispered goodnight.'
+        ],
+        decayStages: [
+          {
+            label: '2004 // EAGLE CRATER LANDING',
+            condition: 'Pristine black silicon solar arrays generating 900+ watt-hours per sol; instruments calibrated.',
+            integrity: 100,
+            filter: 'saturate(1.15) contrast(1.05)'
+          },
+          {
+            label: '2012 // MARATHON MILES',
+            condition: 'Right-front steering actuator locked; dust devils periodically clean arrays; 35 km traversed.',
+            integrity: 76,
+            filter: 'sepia(0.25) contrast(1.1)'
+          },
+          {
+            label: '2018 // THE GLOBAL STORM',
+            condition: 'Thick atmospheric dust drops solar output below 22 watt-hours; internal clock loses track of time.',
+            integrity: 34,
+            filter: 'sepia(0.55) brightness(0.75) contrast(1.2)'
+          },
+          {
+            label: 'TODAY // PERSEVERANCE VALLEY',
+            condition: 'Coated in fine iron-oxide dust; electronics fractured by -95°C winter nights without heater power.',
+            integrity: 19,
+            filter: 'sepia(0.7) grayscale(0.4) brightness(0.7) contrast(1.25)'
+          }
+        ],
+        defaultTributes: [
+          {
+            sender: 'JPL FLIGHT TEAM ALUMNI',
+            message: 'You outlived your 90-day warranty by 5,000+ sols. Rest easy, sweet rover.',
+            timestamp: '2026-11-11 22:10 UTC'
+          }
+        ]
+      },
+      {
+        id: 'insight-lander',
+        world: 'mars',
+        name: 'InSight Lander',
+        shortName: 'INSIGHT // ELYSIUM PLANITIA',
+        year: '2018–2022',
+        mission: 'DISCOVERY PROGRAM // ELYSIUM PLANITIA',
+        coordinates: '04°30′09″N 135°37′24″E',
+        endDate: '2022-12-15T12:00:00Z',
+        status: 'POWER DEPLETED // RETIRED',
+        statusBadgeClass: 'text-orange-400 border-orange-400/40 bg-orange-400/10',
+        mapPos: { x: 72, y: 44 },
+        elevation: '-2,655m Western Elysium Planitia',
+        finalTransmission: '"My power’s really low, so this may be the last image I can send."',
+        narrative: [
+          'Unlike my roving cousins, I never took a single step. I was a three-legged physician with a copper-domed seismometer pressed gently against the Martian dirt, listening for the faint, deep pulse of a world long thought geologically dead. Over four years, I felt more than 1,300 marsquakes—mapping the thickness of Mars’s crust and revealing a liquid iron core churning far beneath my feet.',
+          'With every passing season, the relentless winds of Elysium Planitia blanketed my twin circular solar arrays in thick, cinnamon-colored dust. I used my robotic scoop to trickle sand onto my own panels, letting the breeze carry away just enough grime for a few more weeks of science—until December 2022, when I snapped one final dusty selfie and drifted peacefully into silence.'
+        ],
+        decayStages: [
+          {
+            label: '2018 // SEISMOMETER DEPLOYED',
+            condition: 'Twin 2.15m decagonal solar arrays spotless; SEIS dome listening to Martian winds and quakes.',
+            integrity: 100,
+            filter: 'brightness(1.05)'
+          },
+          {
+            label: '2021 // THE SAND TRICK',
+            condition: 'Dust accumulation cuts power by 80%; robotic arm scoops regolith to scrub solar cells in the wind.',
+            integrity: 58,
+            filter: 'sepia(0.35) contrast(1.1)'
+          },
+          {
+            label: 'DEC 2022 // FINAL SELFIE',
+            condition: 'Solar panels indistinguishable from surrounding red plains; transmitter falls silent after 1,440 sols.',
+            integrity: 28,
+            filter: 'sepia(0.65) brightness(0.8) contrast(1.15)'
+          },
+          {
+            label: 'TODAY // SILENT LISTENER',
+            condition: 'Partially drifted with windblown sand; copper SEIS wind-shield stands like a miniature temple.',
+            integrity: 21,
+            filter: 'sepia(0.75) grayscale(0.3) brightness(0.75)'
+          }
+        ],
+        defaultTributes: [
+          {
+            sender: 'DR. MARCUS VANCE',
+            message: 'Thank you for letting us hear the heartbeat of another planet for the very first time.',
+            timestamp: '2026-11-13 08:33 UTC'
+          }
+        ]
+      },
+      {
+        id: 'ingenuity-helicopter',
+        world: 'mars',
+        name: 'Ingenuity Mars Helicopter',
+        shortName: 'GINNY // WRIGHT BROTHERS FIELD',
+        year: '2021–2024',
+        mission: 'MARS 2020 // NERETVA VALLIS',
+        coordinates: '18°26′41″N 77°27′03″E',
+        endDate: '2024-01-18T15:30:00Z',
+        status: 'ROTOR DAMAGED // GROUNDED',
+        statusBadgeClass: 'text-amber-400 border-amber-400/40 bg-amber-400/10',
+        mapPos: { x: 54, y: 31 },
+        elevation: '-2,570m Jezero Crater',
+        narrative: [
+          'They told me flying on Mars was nearly impossible—that the air was one percent as thick as Earth’s, barely a whisper against carbon-fiber blades. Carrying a postage-stamp swatch of fabric from the 1903 Wright Flyer beneath my solar panel, I spun my rotors at 2,537 RPM and rose three meters into the butterscotch sky, proving powered flight belonged to more than one world.',
+          'Designed for five flights, I soared seventy-two times over nearly three years, scouting treacherous boulders ahead of Perseverance. On Flight 72, above featureless sand ripples where my navigation camera found no rocks to track, my landing tilted—clipping a rotor tip against the ground. I can no longer fly, yet I still wake each morning to measure the Martian weather from my sandy perch.'
+        ],
+        decayStages: [
+          {
+            label: 'APRIL 2021 // FIRST FLIGHT',
+            condition: 'Ultralight 1.8 kg fuselage; pristine counter-rotating carbon blades; Wright Flyer swatch onboard.',
+            integrity: 100,
+            filter: 'saturate(1.1) brightness(1.05)'
+          },
+          {
+            label: '2023 // 70 SORTIES COMPLETE',
+            condition: 'Survived brutal Martian winters with nightly cold-soak reboots; minor dust on top solar cell.',
+            integrity: 82,
+            filter: 'sepia(0.2) contrast(1.05)'
+          },
+          {
+            label: 'JAN 2024 // FLIGHT 72',
+            condition: 'Hard touchdown in Neretva Vallis snaps carbon-fiber rotor blade tip; grounded permanently.',
+            integrity: 52,
+            filter: 'sepia(0.45) contrast(1.15)'
+          },
+          {
+            label: 'TODAY // VALINOR HILLS BEACON',
+            condition: 'Sitting upright in sand dunes; acts as a stationary weather station recording temperature and dust.',
+            integrity: 46,
+            filter: 'sepia(0.55) brightness(0.88) contrast(1.2)'
+          }
+        ],
+        defaultTributes: [
+          {
+            sender: 'KITTY HAWK TO JEZERO',
+            message: '72 flights on an alien world. The Wright brothers would be proud of you, little hummingbird.',
+            timestamp: '2026-11-14 21:50 UTC'
+          }
+        ]
+      }
+    ];
+
+    // ------------------------------------------------------------------------
+    // 2. APPLICATION STATE & LOCALSTORAGE PERSISTENCE
+    // ------------------------------------------------------------------------
+    let currentWorld = 'moon';
+    let selectedArtifactId = null;
+    let currentDecayIndex = 0;
+
+    const STORAGE_KEY = 'abandoned_not_forgotten_html_v1';
+    let tributesStore = {};
+
+    function loadTributes() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          tributesStore = JSON.parse(raw);
+          return;
+        }
+      } catch (e) {
+        console.warn('localStorage unavailable:', e);
+      }
+      ARTIFACTS.forEach((a) => {
+        tributesStore[a.id] = [...a.defaultTributes];
+      });
+    }
+
+    function saveTributes() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(tributesStore));
+      } catch (e) {
+        console.warn('Could not save tributes:', e);
+      }
+    }
+
+    function calculateDaysAlone(endDateIso) {
+      const end = new Date(endDateIso).getTime();
+      const now = Date.now();
+      const diff = Math.max(0, Math.floor((now - end) / (1000 * 60 * 60 * 24)));
+      return diff.toLocaleString();
+    }
+
+    // ------------------------------------------------------------------------
+    // 3. FLOATING COSMIC DUST PARTICLES GENERATOR
+    // ------------------------------------------------------------------------
+    function renderDustParticles() {
+      const container = document.getElementById('dust-container');
+      container.innerHTML = '';
+      const isMars = currentWorld === 'mars';
+
+      for (let i = 0; i < 28; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'dust-particle';
+        const size = (i % 3) + 1.5;
+        dot.style.width = `${size}px`;
+        dot.style.height = `${size}px`;
+        dot.style.left = `${(i * 37) % 100}%`;
+        dot.style.top = `${(i * 53) % 100}%`;
+        dot.style.animationDuration = `${12 + (i % 10)}s`;
+        dot.style.animationDelay = `-${i * 1.1}s`;
+        dot.style.backgroundColor = isMars ? '#E87A48' : '#CBD5E1';
+        dot.style.boxShadow = isMars
+          ? '0 0 8px rgba(193, 68, 14, 0.65)'
+          : '0 0 6px rgba(226, 232, 240, 0.45)';
+        container.appendChild(dot);
+      }
+    }
+
+    // ------------------------------------------------------------------------
+    // 4. SVG TOPOGRAPHICAL MAP & BEACON PINS RENDERER
+    // ------------------------------------------------------------------------
+    function renderTopographicalMap() {
+      const svg = document.getElementById('topo-svg');
+      const isMars = currentWorld === 'mars';
+      const stroke = isMars ? 'rgba(232, 112, 60, 0.24)' : 'rgba(148, 163, 184, 0.20)';
+      const accent = isMars ? 'rgba(193, 68, 14, 0.42)' : 'rgba(229, 169, 60, 0.24)';
+      const glowStart = isMars ? 'rgba(193, 68, 14, 0.28)' : 'rgba(148, 163, 184, 0.15)';
+      const glowMid = isMars ? 'rgba(120, 35, 10, 0.08)' : 'rgba(28, 31, 38, 0.08)';
+
+      const contours = isMars
+        ? `
+          <g fill="none" stroke-linecap="round">
+            <path d="M110,275 C210,255 310,305 430,295 C560,285 670,335 880,300" stroke="rgba(229,169,60,0.28)" stroke-width="1.6" />
+            <path d="M130,290 C235,270 325,320 445,310 C570,300 680,350 860,315" stroke="${stroke}" stroke-width="1.1" />
+            <path d="M150,260 C245,240 335,285 450,275 C575,265 690,310 845,280" stroke="${stroke}" stroke-width="1.1" />
+            <ellipse cx="540" cy="175" rx="145" ry="72" stroke="${stroke}" stroke-width="1.2" />
+            <ellipse cx="540" cy="175" rx="105" ry="48" stroke="${accent}" stroke-width="1" />
+            <ellipse cx="540" cy="175" rx="60" ry="26" stroke="${stroke}" stroke-width="1" />
+            <path d="M210,320 C210,235 450,235 450,320 C450,405 210,405 210,320 Z" stroke="${accent}" stroke-width="1.2" />
+            <path d="M250,320 C250,260 410,260 410,320 C410,380 250,380 250,320 Z" stroke="${stroke}" stroke-width="1" />
+            <path d="M640,245 C680,180 820,185 855,250 C885,305 795,365 710,340 C645,320 615,285 640,245 Z" stroke="${accent}" stroke-width="1.2" />
+            <path d="M675,252 C700,208 795,212 820,255 C840,290 780,330 725,315 C680,302 660,278 675,252 Z" stroke="${stroke}" stroke-width="1" />
+            <text x="115" y="242" fill="rgba(232,122,72,0.42)" font-size="9" class="font-mono-telemetry">MERIDIANI PLANUM // 01°S</text>
+            <text x="690" y="185" fill="rgba(232,122,72,0.42)" font-size="9" class="font-mono-telemetry">ELYSIUM PLANITIA // 135°E</text>
+            <text x="485" y="102" fill="rgba(232,122,72,0.42)" font-size="9" class="font-mono-telemetry">JEZERO CRATER BASIN</text>
+          </g>
+        `
+        : `
+          <g fill="none" stroke-linecap="round">
+            <path d="M520,245 C565,165 745,165 795,255 C835,325 735,405 625,385 C535,368 485,305 520,245 Z" stroke="${accent}" stroke-width="1.3" />
+            <path d="M555,252 C590,195 715,195 755,260 C785,310 710,365 630,350 C565,338 530,295 555,252 Z" stroke="${stroke}" stroke-width="1" />
+            <ellipse cx="645" cy="265" rx="68" ry="42" stroke="${stroke}" stroke-width="0.9" />
+            <path d="M340,145 C410,115 515,120 575,165 C610,190 545,235 465,220 C395,205 305,165 340,145 Z" stroke="${accent}" stroke-width="1.2" />
+            <path d="M380,155 C430,135 500,138 540,168 C565,185 520,212 465,202 C415,192 355,168 380,155 Z" stroke="${stroke}" stroke-width="1" />
+            <circle cx="560" cy="365" r="95" stroke="${stroke}" stroke-width="1.1" />
+            <circle cx="560" cy="365" r="62" stroke="${accent}" stroke-width="1" />
+            <circle cx="560" cy="365" r="32" stroke="${stroke}" stroke-width="0.9" />
+            <path d="M140,210 C190,120 330,130 355,230 C375,315 280,415 190,385 C125,365 105,275 140,210 Z" stroke="${stroke}" stroke-width="1.1" />
+            <text x="680" y="210" fill="rgba(203,213,225,0.38)" font-size="9" class="font-mono-telemetry">MARE TRANQUILLITATIS // 00°N</text>
+            <text x="335" y="112" fill="rgba(203,213,225,0.38)" font-size="9" class="font-mono-telemetry">MONTES APENNINUS // HADLEY RILLE</text>
+            <text x="645" y="425" fill="rgba(203,213,225,0.38)" font-size="9" class="font-mono-telemetry">DESCARTES HIGHLANDS // 08°S</text>
+          </g>
+        `;
+
+      svg.innerHTML = `
+        <defs>
+          <radialGradient id="planetGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="${glowStart}" />
+            <stop offset="65%" stop-color="${glowMid}" />
+            <stop offset="100%" stop-color="rgba(9,10,15,0)" />
+          </radialGradient>
+          <pattern id="microTicks" width="20" height="20" patternUnits="userSpaceOnUse">
+            <circle cx="2" cy="2" r="0.7" fill="${stroke}" />
+          </pattern>
+        </defs>
+        <ellipse cx="500" cy="280" rx="460" ry="255" fill="url(#planetGlow)" />
+        <rect x="40" y="30" width="920" height="500" rx="24" fill="url(#microTicks)" opacity="0.45" />
+        <rect x="36" y="26" width="928" height="508" rx="20" fill="none" stroke="${accent}" stroke-width="1" stroke-dasharray="6 6" />
+        <g stroke="${accent}" stroke-width="1">
+          <line x1="500" y1="16" x2="500" y2="38" />
+          <line x1="500" y1="522" x2="500" y2="544" />
+          <line x1="24" y1="280" x2="48" y2="280" />
+          <line x1="952" y1="280" x2="976" y2="280" />
+        </g>
+        ${contours}
+      `;
+    }
+
+    function renderBeaconsAndFooter() {
+      const pinsLayer = document.getElementById('pins-layer');
+      const quickChips = document.getElementById('quick-chips');
+      const worldArtifacts = ARTIFACTS.filter((a) => a.world === currentWorld);
+
+      pinsLayer.innerHTML = '';
+      quickChips.innerHTML = '';
+
+      worldArtifacts.forEach((item, idx) => {
+        const isSelected = selectedArtifactId === item.id;
+        const daysAlone = calculateDaysAlone(item.endDate);
+
+        // 1. Map Beacon Pin
+        const pinWrapper = document.createElement('div');
+        pinWrapper.style.left = `${item.mapPos.x}%`;
+        pinWrapper.style.top = `${item.mapPos.y}%`;
+        pinWrapper.className = 'absolute -translate-x-1/2 -translate-y-1/2 z-20 group';
+
+        pinWrapper.innerHTML = `
+          <button
+            onclick="openArtifact('${item.id}')"
+            aria-label="Inspect ${item.name}"
+            class="relative flex items-center justify-center p-4 focus:outline-none cursor-pointer"
+          >
+            <span class="beacon-ring absolute w-10 h-10 rounded-full border border-[#E5A93C]/60"></span>
+            <span class="absolute rounded-full transition-all duration-300 ${
+              isSelected
+                ? 'w-11 h-11 bg-[#E5A93C]/25 border border-[#E5A93C]'
+                : 'w-7 h-7 bg-[#E5A93C]/15 border border-[#E5A93C]/60 group-hover:w-10 group-hover:h-10 group-hover:border-[#E5A93C]'
+            }"></span>
+            <span class="relative block rounded-full w-3 h-3 bg-[#E5A93C] shadow-[0_0_16px_#E5A93C] transition-transform group-hover:scale-125"></span>
+
+            <!-- Map Label Tag -->
+            <div class="hidden md:flex items-center gap-1.5 absolute left-10 whitespace-nowrap px-2.5 py-1 rounded border text-[10px] font-mono-telemetry tracking-wider transition-all duration-300 pointer-events-none ${
+              isSelected
+                ? 'bg-[#090A0F]/95 border-[#E5A93C] text-[#E5A93C] translate-x-1'
+                : 'bg-[#090A0F]/80 border-white/15 text-slate-300 group-hover:border-[#E5A93C] group-hover:text-[#E5A93C]'
+            }">
+              <span class="w-1.5 h-1.5 rounded-full bg-[#E5A93C]"></span>
+              <span>${item.shortName}</span>
+              <span class="text-slate-500">[${item.year}]</span>
+            </div>
+          </button>
+
+          <!-- Hover Quick Telemetry Tooltip -->
+          <div class="pointer-events-none opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-1 group-hover:translate-y-0 absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-64 p-3 rounded-lg bg-[#090A0F]/95 backdrop-blur-md border border-[#E5A93C]/60 shadow-2xl z-30">
+            <div class="flex items-center justify-between text-[10px] font-mono-telemetry text-[#E5A93C] mb-1">
+              <span>BEACON // 0${idx + 1}</span>
+              <span>${item.year}</span>
+            </div>
+            <div class="font-serif-editorial text-sm font-semibold text-white leading-snug">
+              ${item.name}
+            </div>
+            <div class="mt-1.5 flex items-center justify-between text-[10px] font-mono-telemetry text-slate-400 border-t border-white/10 pt-1.5">
+              <span>${daysAlone} DAYS ALONE</span>
+              <span class="text-[#E5A93C]">OPEN LOG →</span>
+            </div>
+          </div>
+        `;
+        pinsLayer.appendChild(pinWrapper);
+
+        // 2. Footer Quick Chip
+        const chip = document.createElement('button');
+        chip.onclick = () => openArtifact(item.id);
+        chip.className = `px-3 py-1.5 rounded-lg font-mono-telemetry text-[11px] transition-all flex items-center gap-1.5 cursor-pointer border ${
+          isSelected
+            ? 'bg-[#E5A93C] text-[#090A0F] border-[#E5A93C] font-bold'
+            : 'bg-[#090A0F]/70 text-slate-300 border-white/10 hover:border-[#E5A93C]/60 hover:text-[#E5A93C]'
+        }`;
+        chip.innerHTML = `<span class="opacity-60">0${idx + 1}.</span><span>${item.shortName}</span>`;
+        quickChips.appendChild(chip);
+      });
+    }
+
+    // ------------------------------------------------------------------------
+    // 5. WORLD SWITCHER (THE MOON <-> MARS)
+    // ------------------------------------------------------------------------
+    function switchWorld(world) {
+      currentWorld = world;
+      closeDrawer();
+
+      const isMars = world === 'mars';
+      const btnMoon = document.getElementById('btn-moon');
+      const btnMars = document.getElementById('btn-mars');
+      const backdrop = document.getElementById('world-backdrop');
+      const footerTelemetry = document.getElementById('footer-telemetry');
+
+      if (isMars) {
+        btnMars.className =
+          'px-5 py-2 rounded-full font-mono-telemetry text-xs tracking-widest transition-all duration-300 flex items-center gap-2 cursor-pointer bg-[#E5A93C] text-[#090A0F] font-bold shadow-[0_0_20px_rgba(229,169,60,0.45)]';
+        btnMoon.className =
+          'px-5 py-2 rounded-full font-mono-telemetry text-xs tracking-widest transition-all duration-300 flex items-center gap-2 cursor-pointer text-slate-400 hover:text-white';
+        backdrop.style.background =
+          'radial-gradient(circle at 50% 48%, rgba(193, 68, 14, 0.30) 0%, rgba(58, 20, 12, 0.38) 45%, #090A0F 92%)';
+        footerTelemetry.textContent = 'MARS // AVG DISTANCE: 225M KM // 3 SILENT EXPLORERS';
+      } else {
+        btnMoon.className =
+          'px-5 py-2 rounded-full font-mono-telemetry text-xs tracking-widest transition-all duration-300 flex items-center gap-2 cursor-pointer bg-[#E5A93C] text-[#090A0F] font-bold shadow-[0_0_20px_rgba(229,169,60,0.45)]';
+        btnMars.className =
+          'px-5 py-2 rounded-full font-mono-telemetry text-xs tracking-widest transition-all duration-300 flex items-center gap-2 cursor-pointer text-slate-400 hover:text-white';
+        backdrop.style.background =
+          'radial-gradient(circle at 50% 48%, rgba(46, 52, 66, 0.42) 0%, rgba(28, 31, 38, 0.55) 45%, #090A0F 92%)';
+        footerTelemetry.textContent = 'LUNA // AVG DISTANCE: 384,400 KM // 3 RELICS PRESERVED';
+      }
+
+      renderDustParticles();
+      renderTopographicalMap();
+      renderBeaconsAndFooter();
+    }
+
+    // ------------------------------------------------------------------------
+    // 6. ARTIFACT SCHEMATICS & STORY DRAWER RENDERER
+    // ------------------------------------------------------------------------
+    function getArtifactSchematicSVG(id) {
+      switch (id) {
+        case 'apollo-11-eagle':
+          return `<svg viewBox="0 0 240 120" class="w-44 h-24 stroke-[#E5A93C] fill-none" stroke-width="1.4">
+            <polygon points="85,22 155,22 175,45 175,78 155,95 85,95 65,78 65,45" fill="rgba(229,169,60,0.08)" />
+            <polygon points="92,42 112,42 102,56" />
+            <polygon points="148,42 128,42 138,56" />
+            <rect x="108" y="10" width="24" height="12" />
+            <path d="M52,55 L65,55 M52,65 L65,65 M175,55 L188,55 M175,65 L188,65" />
+            <path d="M120,22 L120,6 M110,8 Q120,16 130,8" />
+            <polygon points="106,95 134,95 142,112 98,112" fill="rgba(229,169,60,0.16)" />
+          </svg>`;
+        case 'apollo-15-lrv':
+          return `<svg viewBox="0 0 240 120" class="w-44 h-24 stroke-[#E5A93C] fill-none" stroke-width="1.4">
+            <line x1="48" y1="84" x2="192" y2="84" stroke-width="2.2" />
+            <path d="M95,84 L95,56 L112,56 M132,84 L132,56 L148,56" />
+            <line x1="168" y1="84" x2="178" y2="34" />
+            <path d="M156,28 Q178,44 198,26" />
+            <line x1="184" y1="84" x2="188" y2="54" />
+            <rect x="182" y="46" width="14" height="8" />
+            <circle cx="66" cy="88" r="20" fill="rgba(229,169,60,0.08)" />
+            <circle cx="66" cy="88" r="8" />
+            <circle cx="174" cy="88" r="20" fill="rgba(229,169,60,0.08)" />
+            <circle cx="174" cy="88" r="8" />
+          </svg>`;
+        case 'charles-duke-photo':
+          return `<svg viewBox="0 0 240 120" class="w-44 h-24 stroke-[#E5A93C] fill-none" stroke-width="1.4">
+            <rect x="74" y="14" width="92" height="92" rx="4" stroke-dasharray="3 3" />
+            <rect x="82" y="22" width="76" height="76" fill="rgba(229,169,60,0.1)" />
+            <circle cx="104" cy="48" r="6" />
+            <circle cx="120" cy="46" r="6.5" />
+            <circle cx="136" cy="54" r="5" />
+            <path d="M94,76 Q104,58 114,76 M110,76 Q120,56 130,76 M128,76 Q136,62 144,76" />
+            <ellipse cx="44" cy="74" rx="11" ry="22" transform="rotate(-14 44 74)" stroke-opacity="0.6" />
+          </svg>`;
+        case 'opportunity-rover':
+          return `<svg viewBox="0 0 240 120" class="w-44 h-24 stroke-[#E5A93C] fill-none" stroke-width="1.4">
+            <polygon points="54,64 186,64 174,76 66,76" fill="rgba(229,169,60,0.12)" />
+            <line x1="154" y1="64" x2="154" y2="26" stroke-width="2" />
+            <rect x="142" y="18" width="26" height="10" rx="2" />
+            <circle cx="149" cy="23" r="2" />
+            <circle cx="161" cy="23" r="2" />
+            <path d="M68,94 L92,76 L120,94 L148,76 L172,94" />
+            <circle cx="68" cy="96" r="12" fill="rgba(229,169,60,0.08)" />
+            <circle cx="120" cy="96" r="12" fill="rgba(229,169,60,0.08)" />
+            <circle cx="172" cy="96" r="12" fill="rgba(229,169,60,0.08)" />
+          </svg>`;
+        case 'insight-lander':
+          return `<svg viewBox="0 0 240 120" class="w-44 h-24 stroke-[#E5A93C] fill-none" stroke-width="1.4">
+            <ellipse cx="52" cy="62" rx="34" ry="11" fill="rgba(229,169,60,0.12)" />
+            <ellipse cx="188" cy="62" rx="34" ry="11" fill="rgba(229,169,60,0.12)" />
+            <rect x="88" y="56" width="64" height="14" rx="2" />
+            <line x1="94" y1="70" x2="78" y2="104" />
+            <line x1="146" y1="70" x2="162" y2="104" />
+            <line x1="120" y1="70" x2="120" y2="104" />
+            <path d="M24,104 A16,16 0 0,1 56,104 Z" fill="rgba(229,169,60,0.2)" />
+            <path d="M56,100 Q72,96 88,68" stroke-dasharray="3 2" />
+          </svg>`;
+        default:
+          return `<svg viewBox="0 0 240 120" class="w-44 h-24 stroke-[#E5A93C] fill-none" stroke-width="1.4">
+            <rect x="94" y="16" width="52" height="7" rx="1" fill="rgba(229,169,60,0.2)" />
+            <line x1="36" y1="32" x2="204" y2="32" stroke-width="2" />
+            <line x1="48" y1="42" x2="192" y2="42" stroke-width="1.6" />
+            <line x1="120" y1="23" x2="120" y2="56" stroke-width="2" />
+            <rect x="102" y="56" width="36" height="26" rx="3" fill="rgba(229,169,60,0.12)" />
+            <path d="M102,78 L74,106 M138,78 L166,106 M108,82 L92,106 M132,82 L148,106" />
+          </svg>`;
+      }
+    }
+
+    function openArtifact(id) {
+      const artifact = ARTIFACTS.find((a) => a.id === id);
+      if (!artifact) return;
+
+      selectedArtifactId = id;
+      currentDecayIndex = 0;
+      renderBeaconsAndFooter();
+
+      document.getElementById('drawer-mission').textContent = artifact.mission;
+      renderDrawerBody(artifact);
+
+      const backdrop = document.getElementById('drawer-backdrop');
+      const drawer = document.getElementById('story-drawer');
+      backdrop.classList.remove('hidden');
+      requestAnimationFrame(() => {
+        backdrop.classList.remove('opacity-0');
+        drawer.classList.add('open');
+      });
+    }
+
+    function closeDrawer() {
+      selectedArtifactId = null;
+      renderBeaconsAndFooter();
+
+      const backdrop = document.getElementById('drawer-backdrop');
+      const drawer = document.getElementById('story-drawer');
+      drawer.classList.remove('open');
+      backdrop.classList.add('opacity-0');
+      setTimeout(() => {
+        backdrop.classList.add('hidden');
+      }, 320);
+    }
+
+    function updateDecayStage(idx) {
+      currentDecayIndex = Number(idx);
+      const artifact = ARTIFACTS.find((a) => a.id === selectedArtifactId);
+      if (!artifact) return;
+
+      const stage = artifact.decayStages[currentDecayIndex];
+      document.getElementById('decay-integrity').textContent = `${stage.integrity}%`;
+      document.getElementById('decay-epoch').textContent = `EPOCH 0${currentDecayIndex + 1} / 04`;
+      document.getElementById('decay-label').textContent = stage.label;
+      document.getElementById('decay-condition').textContent = stage.condition;
+
+      const schematicEl = document.getElementById('decay-schematic');
+      schematicEl.style.filter = stage.filter;
+      schematicEl.style.opacity = Math.max(0.38, stage.integrity / 100);
+
+      const dustEl = document.getElementById('decay-dust-grain');
+      dustEl.style.opacity = (100 - stage.integrity) / 140;
+    }
+
+    function submitTribute(event) {
+      event.preventDefault();
+      const artifact = ARTIFACTS.find((a) => a.id === selectedArtifactId);
+      if (!artifact) return;
+
+      const nameInput = document.getElementById('tribute-sender');
+      const msgInput = document.getElementById('tribute-message');
+      const msg = msgInput.value.trim();
+      if (!msg) return;
+
+      const newEntry = {
+        sender: (nameInput.value.trim() || 'ANONYMOUS LISTENER').toUpperCase(),
+        message: msg,
+        timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16) + ' UTC',
+        isNew: true
+      };
+
+      if (!tributesStore[artifact.id]) tributesStore[artifact.id] = [];
+      tributesStore[artifact.id].unshift(newEntry);
+      saveTributes();
+
+      msgInput.value = '';
+      renderDrawerBody(artifact, true);
+    }
+
+    function escapeHTML(str) {
+      return str.replace(/[&<>"']/g, (m) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[m]));
+    }
+
+    function renderDrawerBody(artifact, showPingSuccess = false) {
+      const daysAlone = calculateDaysAlone(artifact.endDate);
+      const stage = artifact.decayStages[currentDecayIndex];
+      const tributes = tributesStore[artifact.id] || [];
+
+      const finalQuoteHTML = artifact.finalTransmission
+        ? `
+          <div class="relative p-4 rounded-xl bg-gradient-to-r from-[#C1440E]/20 via-[#E5A93C]/10 to-transparent border-l-2 border-[#E5A93C]">
+            <div class="text-[10px] font-mono-telemetry tracking-widest text-[#E5A93C] mb-1">
+              FINAL DOWNLINK PACKET // DECODED
+            </div>
+            <p class="font-serif-editorial italic text-base sm:text-lg text-white">
+              ${artifact.finalTransmission}
+            </p>
+          </div>
+        `
+        : '';
+
+      const narrativeHTML = artifact.narrative
+        .map(
+          (para) => `
+          <p class="font-serif-editorial text-[16px] sm:text-[17px] leading-[1.78] text-slate-200/95 first-letter:text-3xl first-letter:font-bold first-letter:text-[#E5A93C] first-letter:mr-1">
+            ${para}
+          </p>
+        `
+        )
+        .join('');
+
+      const tributesListHTML = tributes
+        .map(
+          (t) => `
+          <div class="p-3 rounded-lg border text-xs ${
+            t.isNew
+              ? 'bg-[#E5A93C]/10 border-[#E5A93C]/50 shadow-[0_0_20px_rgba(229,169,60,0.12)]'
+              : 'bg-[#090A0F]/60 border-white/10'
+          }">
+            <div class="flex items-center justify-between text-[10px] font-mono-telemetry mb-1">
+              <span class="text-[#E5A93C] font-bold flex items-center gap-1.5">
+                ${t.isNew ? '<span class="w-1.5 h-1.5 rounded-full bg-[#E5A93C] animate-ping"></span>' : ''}
+                ${escapeHTML(t.sender)}
+              </span>
+              <span class="text-slate-500">${escapeHTML(t.timestamp)}</span>
+            </div>
+            <p class="text-slate-200 leading-relaxed font-serif-editorial italic text-sm">
+              “${escapeHTML(t.message)}”
+            </p>
+          </div>
+        `
+        )
+        .join('');
+
+      document.getElementById('drawer-content').innerHTML = `
+        <!-- Title & Status -->
+        <div>
+          <div class="flex flex-wrap items-center gap-2.5 mb-3">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-mono-telemetry tracking-wider border ${artifact.statusBadgeClass}">
+              ⚠ ${artifact.status}
+            </span>
+            <span class="px-2.5 py-1 rounded text-[10px] font-mono-telemetry tracking-wider bg-white/5 border border-white/10 text-slate-300">
+              EPOCH ${artifact.year}
+            </span>
+          </div>
+          <h2 class="font-serif-editorial text-2xl sm:text-3xl font-bold text-white leading-tight">
+            ${artifact.name}
+          </h2>
+        </div>
+
+        <!-- Telemetry Cards -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="p-3.5 rounded-xl bg-white/[0.03] border border-white/10">
+            <div class="text-[10px] font-mono-telemetry text-slate-400 mb-1">◷ DAYS ALONE</div>
+            <div class="font-mono-telemetry text-xl sm:text-2xl font-bold text-[#E5A93C]">${daysAlone}</div>
+            <div class="text-[10px] font-mono-telemetry text-slate-500 mt-0.5">LIVE COUNTER TO TODAY</div>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-white/[0.03] border border-white/10">
+            <div class="text-[10px] font-mono-telemetry text-slate-400 mb-1">⌖ SURFACE COORDINATES</div>
+            <div class="font-mono-telemetry text-xs sm:text-sm font-semibold text-slate-100 leading-snug">${artifact.coordinates}</div>
+            <div class="text-[10px] font-mono-telemetry text-slate-500 mt-1">${artifact.elevation}</div>
+          </div>
+        </div>
+
+        ${finalQuoteHTML}
+
+        <!-- First-Person Story -->
+        <div class="space-y-4">
+          <div class="text-[11px] font-mono-telemetry tracking-widest text-slate-400">
+            📡 FIRST-PERSON ARCHIVAL VOICE
+          </div>
+          ${narrativeHTML}
+        </div>
+
+        <!-- Environmental Decay Timeline -->
+        <div class="rounded-xl bg-[#090A0F]/80 border border-white/10 p-4 sm:p-5">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-mono-telemetry tracking-wider text-[#E5A93C]">
+              ⚙ ENVIRONMENTAL DECAY TIMELINE
+            </span>
+            <span class="text-[11px] font-mono-telemetry text-slate-400">
+              INTEGRITY: <strong id="decay-integrity" class="text-white">${stage.integrity}%</strong>
+            </span>
+          </div>
+
+          <div class="relative h-32 rounded-lg bg-gradient-to-b from-white/[0.03] to-transparent border border-white/5 flex items-center justify-center overflow-hidden mb-4">
+            <div
+              id="decay-schematic"
+              class="transition-all duration-500 flex flex-col items-center"
+              style="filter: ${stage.filter}; opacity: ${Math.max(0.38, stage.integrity / 100)};"
+            >
+              ${getArtifactSchematicSVG(artifact.id)}
+            </div>
+
+            <div
+              id="decay-dust-grain"
+              class="absolute inset-0 pointer-events-none transition-opacity duration-500"
+              style="opacity: ${(100 - stage.integrity) / 140}; background-image: radial-gradient(rgba(229,169,60,0.3) 1px, transparent 0); background-size: 10px 10px;"
+            ></div>
+
+            <div class="absolute bottom-2 left-3 right-3 flex items-center justify-between text-[10px] font-mono-telemetry text-slate-400">
+              <span id="decay-epoch">EPOCH 0${currentDecayIndex + 1} / 04</span>
+              <span id="decay-label" class="text-[#E5A93C]">${stage.label}</span>
+            </div>
+          </div>
+
+          <input
+            type="range"
+            min="0"
+            max="${artifact.decayStages.length - 1}"
+            step="1"
+            value="${currentDecayIndex}"
+            oninput="updateDecayStage(this.value)"
+            class="w-full decay-slider"
+          />
+
+          <div class="flex justify-between mt-1.5 text-[10px] font-mono-telemetry text-slate-500">
+            ${artifact.decayStages
+              .map((s) => `<span>${s.label.split('//')[0].trim()}</span>`)
+              .join('')}
+          </div>
+
+          <p id="decay-condition" class="mt-3 text-xs leading-relaxed text-slate-300 border-t border-white/10 pt-3">
+            ${stage.condition}
+          </p>
+        </div>
+
+        <!-- Send a Signal / Leave a Tribute -->
+        <div class="rounded-xl bg-white/[0.03] border border-white/10 p-4 sm:p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-mono-telemetry tracking-wider text-[#E5A93C]">
+              ✉ SEND A SIGNAL // LEAVE A TRIBUTE
+            </span>
+            ${
+              showPingSuccess
+                ? '<span class="text-[10px] font-mono-telemetry text-emerald-400">✓ UPLINK TRANSMITTED</span>'
+                : ''
+            }
+          </div>
+
+          <form onsubmit="submitTribute(event)" class="space-y-2.5">
+            <input
+              id="tribute-sender"
+              type="text"
+              maxlength="42"
+              placeholder="Your Name / Callsign (Optional)"
+              class="w-full px-3.5 py-2 rounded-lg bg-[#090A0F]/90 border border-white/10 text-xs font-mono-telemetry text-white placeholder-slate-500 focus:outline-none focus:border-[#E5A93C]"
+            />
+            <div class="flex gap-2">
+              <input
+                id="tribute-message"
+                type="text"
+                maxlength="180"
+                required
+                placeholder="Transmit a message across space to ${artifact.shortName}..."
+                class="flex-1 px-3.5 py-2.5 rounded-lg bg-[#090A0F]/90 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#E5A93C]"
+              />
+              <button
+                type="submit"
+                class="px-4 py-2.5 rounded-lg bg-[#E5A93C] text-[#090A0F] font-mono-telemetry text-xs font-bold tracking-wider hover:bg-[#f0b951] transition-all cursor-pointer shadow-[0_0_20px_rgba(229,169,60,0.3)]"
+              >
+                PING ↗
+              </button>
+            </div>
+          </form>
+
+          <div class="pt-3 border-t border-white/10">
+            <div class="flex items-center justify-between text-[10px] font-mono-telemetry text-slate-400 mb-3">
+              <span>TRANSMISSIONS RECEIVED FROM EARTH (${tributes.length})</span>
+              <span>DSN-ARCHIVE</span>
+            </div>
+            <div class="space-y-2.5 max-h-52 overflow-y-auto pr-1">
+              ${tributesListHTML}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // ------------------------------------------------------------------------
+    // 7. WEB AUDIO API: AMBIENT DEEP SPACE DRONE & RADIO STATIC SYNTHESIZER
+    // ------------------------------------------------------------------------
+    let audioCtx = null;
+    let masterGain = null;
+    let staticTimer = null;
+    let isAudioPlaying = false;
+
+    function toggleSpaceAudio() {
+      const btn = document.getElementById('btn-audio');
+      const icon = document.getElementById('audio-icon');
+      const label = document.getElementById('audio-label');
+
+      if (isAudioPlaying) {
+        if (staticTimer) clearTimeout(staticTimer);
+        if (audioCtx && masterGain) {
+          masterGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
+          setTimeout(() => {
+            if (audioCtx) audioCtx.close();
+            audioCtx = null;
+          }, 550);
+        }
+        isAudioPlaying = false;
+        icon.textContent = '🔇';
+        label.textContent = 'DEEP SPACE AUDIO';
+        btn.className =
+          'px-3.5 py-2 rounded-full border font-mono-telemetry text-[11px] tracking-wider flex items-center gap-2 transition-all cursor-pointer bg-[#1C1F26]/80 border-white/15 text-slate-400 hover:text-white hover:border-white/30';
+        return;
+      }
+
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContextClass();
+
+        masterGain = audioCtx.createGain();
+        masterGain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+        masterGain.gain.exponentialRampToValueAtTime(0.18, audioCtx.currentTime + 2.2);
+        masterGain.connect(audioCtx.destination);
+
+        // Cosmic sub-bass drone
+        const osc1 = audioCtx.createOscillator();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(55, audioCtx.currentTime);
+
+        const osc2 = audioCtx.createOscillator();
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(82.41, audioCtx.currentTime);
+
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(160, audioCtx.currentTime);
+
+        const osc2Gain = audioCtx.createGain();
+        osc2Gain.gain.setValueAtTime(0.32, audioCtx.currentTime);
+
+        osc1.connect(filter);
+        osc2.connect(osc2Gain);
+        osc2Gain.connect(filter);
+        filter.connect(masterGain);
+
+        osc1.start();
+        osc2.start();
+
+        // Occasional faint radio static & telemetry ping
+        const scheduleRadioStatic = () => {
+          if (!audioCtx || audioCtx.state !== 'running') return;
+          const now = audioCtx.currentTime;
+          const bufferSize = audioCtx.sampleRate * 1.2;
+          const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+          const noise = audioCtx.createBufferSource();
+          noise.buffer = buffer;
+
+          const bandpass = audioCtx.createBiquadFilter();
+          bandpass.type = 'bandpass';
+          bandpass.frequency.setValueAtTime(1500 + Math.random() * 800, now);
+          bandpass.Q.setValueAtTime(4.5, now);
+
+          const nGain = audioCtx.createGain();
+          nGain.gain.setValueAtTime(0.0001, now);
+          nGain.gain.exponentialRampToValueAtTime(0.032, now + 0.35);
+          nGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.15);
+
+          noise.connect(bandpass);
+          bandpass.connect(nGain);
+          nGain.connect(masterGain);
+          noise.start(now);
+
+          staticTimer = setTimeout(scheduleRadioStatic, 6000 + Math.random() * 6000);
+        };
+
+        staticTimer = setTimeout(scheduleRadioStatic, 2500);
+
+        isAudioPlaying = true;
+        icon.textContent = '🔊';
+        label.textContent = 'TELEMETRY AUDIO: ON';
+        btn.className =
+          'px-3.5 py-2 rounded-full border font-mono-telemetry text-[11px] tracking-wider flex items-center gap-2 transition-all cursor-pointer bg-[#E5A93C]/15 border-[#E5A93C] text-[#E5A93C] shadow-[0_0_20px_rgba(229,169,60,0.2)]';
+      } catch (err) {
+        console.error('Audio start failed:', err);
+      }
+    }
+
+    // Close drawer with Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && selectedArtifactId) closeDrawer();
+    });
+
+    // ------------------------------------------------------------------------
+    // 8. INITIALIZE APPLICATION ON PAGE LOAD
+    // ------------------------------------------------------------------------
+    window.addEventListener('DOMContentLoaded', () => {
+      loadTributes();
+      renderDustParticles();
+      renderTopographicalMap();
+      renderBeaconsAndFooter();
+    });
+  </script>
+</body>
+</html>
